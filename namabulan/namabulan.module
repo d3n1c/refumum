@@ -1,0 +1,450 @@
+<?php
+/* 
+ *  Copyright (c) 2010 Denic Wibowo<denicwibowo@gmail.com>.
+ *  All rights reserved.
+ *  
+ *  This program is free software; you can redistribute it and/or modify it 
+ *  under the terms of the GNU General Public License as published by the 
+ *  Free Software Foundation; either version 2 of the License, or 
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful, but 
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of 
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General 
+ *  Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License along 
+ *  with this program; if not, write to the Free Software Foundation, Inc., 
+ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ *  
+ *  namabulan.module
+ *  
+ *  Created on Jan 15, 2010, 9:05:34 PM
+ */
+
+// $Id$
+
+/**
+* @file
+* Provides a "custom variables" node type.
+*/
+
+function _namabulan_default_value() {
+  $result = array(
+    1 => 'Januari',
+    2 => 'Februari',
+    3 => 'Maret',
+    4 => 'April',
+    5 => 'Mei',
+    6 => 'Juni',
+    7 => 'Juli',
+    8 => 'Agustus',
+    9 => 'September',
+    10 => 'Oktober',
+    11 => 'November',
+    12 => 'Desember'
+  );
+  return $result;
+}
+
+function namabulan_menu() {
+  $items['namabulan'] = array(
+    'title' => 'Nama Bulan',
+    'description' => 'Referensi Nama Bulan',
+    'page callback' => 'namabulan_list',
+    'access callback' => TRUE,
+    'menu_name' => 'refumum',
+  );
+  $items['namabulan/list'] = array(
+    'title' => 'Daftar',
+    'description' => 'Daftar Referensi Nama Bulan',
+    'access callback' => TRUE,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -11,
+  );
+  $items['namabulan/add'] = array(
+    'title' => 'Tambah',
+    'description' => 'Tambah referensi nama bulan',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'namabulan_add',
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'weight' => -10,
+  );
+  $items['namabulan/%refumum'] = array(
+    'title' => 'Detil Nama Bulan',
+    'page callback' => 'namabulan_view',
+    'page arguments' => array(1),
+    'access callback' => 'user_access',
+    'access arguments' => array('view refumum'),
+    'parent' => 'namabulan',
+    'weight' => -10,
+  );
+  $items['namabulan/%refumum/edit'] = array(
+    'title' => 'Edit Nama Bulan',
+    'page callback' => 'namabulan_edit',
+    'page arguments' => array(1),
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'parent' => 'namabulan',
+    'weight' => -10,
+  );
+  $items['namabulan/%refumum/drop'] = array(
+    'title' => 'Hapus Nama Bulan',
+    'page callback' => 'namabulan_drop',
+    'page arguments' => array(1),
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'parent' => 'namabulan',
+    'weight' => -10,
+  );
+  $items['namabulan/clear'] = array(
+    'title' => 'Kosongkan',
+    'description' => 'Kosongkan referensi nama bulan',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'namabulan_clear',
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'weight' => -10,
+  );
+  $items['namabulan/setdefault'] = array(
+    'title' => 'Set Default',
+    'description' => 'Set referensi nama bulan ke default',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'namabulan_setdefault',
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'weight' => -10,
+  );
+
+  return $items;
+}
+
+function namabulan_clear() {
+  $output = t('Anda yakin ingin mengosongkan data referensi nama bulan ?');
+  $output .= drupal_get_form('namabulan_clearform');
+  return $output;
+}
+
+function namabulan_setdefault() {
+  $output = t('Data default referensi nama bulan sebagai berikut');
+  $output .= '<div><ol>';
+  $getdata = _namabulan_default_value();
+  foreach ($getdata as $key => $value) {
+    $output .= '<li>' . $value . '</li>';
+  }
+  $output .= '</ol></div>';
+  $output .= t('Anda yakin ingin set data referensi nama bulan ke default ?');
+  $output .= drupal_get_form('namabulan_defaultform');
+  return $output;
+}
+
+function namabulan_view() {
+  $bid = explode('/', drupal_get_path_alias($_GET['q']));
+  $bid = (int)$bid[(count($bid) - 1)];
+  $item = _refumum_getvars('namabulan', 'bid', 'namabulan');
+  $item = $item[$bid];
+  $content = theme(
+    'refumum_detail',
+    array('kode' => $bid, 'Nama Bulan' => $item),
+    array('key' => 'kode', 'linkuse' => 'namabulan')
+  );
+//  $content = theme('refumum_detail', 'Detail Nama Bulan', 'testaja');
+  unset($item);
+  return $content;
+}
+
+function namabulan_list() {
+  $namabulan = _refumum_getvars('namabulan', 'bid', 'namabulan');
+  $row_header = array(
+    array(
+      'data' => t('Kode'),
+      'width' => '10%'
+    ),
+    array(
+      'data' => t('Nama Bulan'),
+    )
+  );
+  foreach ($namabulan as $key => $value) {
+    $row[$key][] = $key;
+    $row[$key][] = l($value, 'namabulan/' . $key);
+  } unset($namabulan, $getvars);
+  $output = t('Halaman ini menampilkan daftar Nama Bulan yang telah terdaftar dalam referensi');
+  $output .= theme('table', $row_header, $row);
+  return $output;
+}
+
+function namabulan_add() {
+  $output = t('Tambah referensi Nama Bulan');
+  db_set_active(REFUMUM_DB_USE);
+  $sql = db_query("SELECT 0 FROM {namabulan}");
+  if (db_affected_rows($sql) > 11) {
+    drupal_set_message(t('Referensi Nama Bulan sudah penuh !'));
+  }
+  else {
+    $output .= drupal_get_form('namabulan_refform');
+  } unset($sql);
+  db_set_active('default');
+  return $output;
+}
+
+function namabulan_edit() {
+  $output = t('Edit referensi Nama Bulan');
+  $output .= drupal_get_form('namabulan_refedit');
+  return $output;
+}
+
+function namabulan_refedit() {
+  $bid = explode('/', drupal_get_path_alias($_GET['q']));
+  $bid = (int)$bid[(count($bid) - 2)];
+  return _namabulan_getform($bid, 'edit');
+}
+
+function namabulan_refform() {
+  return _namabulan_getform();
+}
+
+function _namabulan_getform($bid=NULL, $op=NULL) {
+  $getcount = _refumum_getvars('namabulan', 'bid', 'namabulan');
+  if (!is_null($op) && $op == 'edit') {
+    $value = array(
+      'bid' => $bid,
+      'namabulan' => $getcount[$bid],
+      'submitval' => 'edit'
+    );
+  }
+  else {
+    $value = array(
+//      'bid' => count($getcount['namabulan']) + 1,
+      'bid' => _refumum_getid('namabulan', 'bid'),
+      'submitval' => 'input'
+    );
+  }
+  unset($getcount);
+  $form['bid'] = array(
+    '#title' => t('Kode'),
+    '#type' => 'textfield',
+    '#size' => '5',
+    '#value' => $value['bid'],
+    '#description' => t('Kode referensi'),
+    '#attributes' => array('readonly' => 'readonly')
+  );
+  $form['namabulan'] = array(
+    '#title' => t('Nama Bulan'),
+    '#type' => 'textfield',
+    '#description' => t('Uraian'),
+  );
+  if (isset($value['namabulan'])) {
+    $form['namabulan']['#value'] = $value['namabulan'];
+  }
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t($value['submitval'])
+  );
+  return $form;
+}
+
+/**
+* Validate the form.
+*/
+function namabulan_refform_validate($form, &$form_state) {
+  _namabulan_validate($form, $form_state);
+}
+
+function namabulan_refedit_validate($form, &$form_state) {
+  _namabulan_validate($form, $form_state);
+}
+
+function _namabulan_validate($form, &$form_state) {
+  foreach ($form_state['clicked_button']['#post'] as $key => $value) {
+    if ($key != 'op' && $key != 'form_build_id' && $key != 'form_token' && $key != 'form_id') {
+      if (trim($value) == '') {
+        // We notify the form API that this field has failed validation.
+        $error = array(
+          'key' => $key,
+          'message' => t($key . ' harus terisi !')
+        );
+        break;
+      }
+      elseif ($key == 'bid') {
+        if (!is_numeric(trim($value))) {
+          $error = array(
+            'key' => $key,
+            'message' => t($key . ' harus berupa angka !')
+          );
+          break;
+        }
+        elseif (trim($value) < 1) {
+          $error = array(
+            'key' => $key,
+            'message' => t($key . ' harus bernilai lebih dari 0 !')
+          );
+          break;
+        }
+        else {
+          if ($form_state['clicked_button']['#post']['op'] != 'edit') {
+            db_set_active(REFUMUM_DB_USE);
+            $sql = db_query("SELECT 1 FROM {namabulan} WHERE bid = %d", $value);
+            if (db_affected_rows($sql) > 0) {
+              unset($sql);
+              $error = array(
+                'key' => $key,
+                'message' => t($value . ' pada ' . $key . ' sudah ada !')
+              );
+              break;
+            } unset($sql);
+            db_set_active('default');
+          }
+        }
+      }
+    }
+  }
+
+  if (isset($error)) {
+    form_set_error($error['key'], $error['message']);
+  }
+}
+
+/**
+* Handle post-validation form submission.
+*/
+function namabulan_refform_submit($form, &$form_state) {
+  _namabulan_submit($form, $form_state);
+}
+
+function namabulan_refedit_submit($form, &$form_state) {
+  _namabulan_submit($form, $form_state);
+}
+
+function _namabulan_submit($form, &$form_state) {
+  if ($form_state['clicked_button']['#post']['op'] == 'edit') {
+    $sql = 'UPDATE {namabulan} SET ';
+  }
+  else {
+    $sql = 'INSERT INTO {namabulan} (';
+  }
+  $isi = '';
+  foreach ($form_state['clicked_button']['#post'] as $key => $value) {
+    if ($key != 'op' && $key != 'form_build_id' && $key != 'form_token' && $key != 'form_id') {
+      if (isset($koma)) {
+        $sql .= ', ';
+        $isi .= ', ';
+      }
+      $isi .= $key == 'namabulan' ? "'%s'" : '%d';
+      $sql .= $key . ($form_state['clicked_button']['#post']['op'] == 'edit' ? '=' . ($key == 'namabulan' ? "'%s'" : '%d') : '');
+      $koma = 1;
+    }
+  } unset($koma);
+  db_set_active(REFUMUM_DB_USE);
+  if ($form_state['clicked_button']['#post']['op'] == 'edit') {
+    $sql .= " WHERE bid=%d";
+    $sql = db_query(
+      $sql,
+      $form_state['clicked_button']['#post']['bid'],
+      $form_state['clicked_button']['#post']['namabulan'],
+      $form_state['clicked_button']['#post']['bid']
+    );
+  }
+  else {
+    $sql .= ') VALUES (' . $isi . ')';
+    $sql = db_query(
+      $sql,
+      $form_state['clicked_button']['#post']['bid'],
+      $form_state['clicked_button']['#post']['namabulan']
+    );
+  }
+  unset($isi);
+  db_set_active('default');
+  $name = $form_state['clicked_button']['#post']['namabulan'];
+  drupal_set_message(t('Referensi %name telah ' . ($form_state['clicked_button']['#post']['op'] != 'edit' ? 'ditambahkan' : 'diperbaiki'),
+  array('%name' => $name)));
+  unset($name);
+  $form_state['redirect'] = 'namabulan';
+}
+
+function namabulan_drop() {
+  $bid = explode('/', drupal_get_path_alias($_GET['q']));
+  $bid = (int)$bid[(count($bid) - 2)];
+  $getdata = _refumum_getvars('namabulan', 'bid', 'namabulan');
+  $getdata = $getdata[$bid];
+  $output = t('Anda yakin ingin menghapus ');
+  $output .= '"<strong>' . $getdata . '</strong>" ?';
+  $output .= drupal_get_form('namabulan_dropform');
+  return $output;
+}
+
+function namabulan_dropform() {
+  $bid = explode('/', drupal_get_path_alias($_GET['q']));
+  $bid = (int)$bid[(count($bid) - 2)];
+  $form['bid'] = array(
+    '#value' => $bid,
+    '#type' => 'hidden'
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Ya, Hapus saja !'),
+    '#attributes' => array(
+      'style' => 'color: yellow; font-weight:bold; background: red'
+    )
+  );
+  return $form;
+}
+
+function namabulan_clearform() {
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Ya, Kosongkan saja !'),
+    '#attributes' => array(
+      'style' => 'color: yellow; font-weight:bold; background: red'
+    )
+  );
+  return $form;
+}
+
+function namabulan_defaultform() {
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Ya, set default saja !'),
+    '#attributes' => array(
+      'style' => 'color: red; font-weight:bold; background: yellow'
+    )
+  );
+  return $form;
+}
+
+function namabulan_dropform_submit($form, &$form_state) {
+  $bid = $form_state['clicked_button']['#post']['bid'];
+  $getdata = _refumum_getvars('namabulan', 'bid', 'namabulan');
+  _refumum_drop('namabulan', 'bid', $bid);
+  $name = $getdata[(int)$bid];
+  unset($getdata);
+  drupal_set_message(t('Referensi %name telah dihapus',
+  array('%name' => $name)));
+  unset($name);
+  $form_state['redirect'] = 'namabulan';
+}
+
+function namabulan_defaultform_submit($form, &$form_state) {
+  _refumum_clear_data('namabulan');
+  _namabulan_set_to_default();
+  drupal_set_message(t('Referensi nama bulan telah diseting ke default'));
+  $form_state['redirect'] = 'namabulan';
+}
+
+function namabulan_clearform_submit($form, &$form_state) {
+  _refumum_clear_data('namabulan');
+  drupal_set_message(t('Referensi nama bulan telah dikosongkan'));
+  $form_state['redirect'] = 'namabulan';
+}
+
+function _namabulan_set_to_default() {
+  $getvalues = _namabulan_default_value();
+  db_set_active(REFUMUM_DB_USE);
+  foreach ($getvalues as $key => $value) {
+    db_query("INSERT INTO {namabulan} (bid, namabulan) VALUES (%d, '%s')",
+      $key, $value
+    );
+  }
+  db_set_active('default');
+}

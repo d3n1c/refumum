@@ -1,0 +1,440 @@
+<?php
+/* 
+ *  Copyright (c) 2010 Denic Wibowo<denicwibowo@gmail.com>.
+ *  All rights reserved.
+ *  
+ *  This program is free software; you can redistribute it and/or modify it 
+ *  under the terms of the GNU General Public License as published by the 
+ *  Free Software Foundation; either version 2 of the License, or 
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful, but 
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of 
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General 
+ *  Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License along 
+ *  with this program; if not, write to the Free Software Foundation, Inc., 
+ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ *  
+ *  jeniskelamin.module
+ *  
+ *  Created on Jan 15, 2010, 9:05:34 PM
+ */
+
+// $Id$
+
+/**
+* @file
+* Provides a "custom variables" node type.
+*/
+
+function _jeniskelamin_default_value() {
+  $result = array(
+    1 => 'Laki-laki',
+    2 => 'Perempuan'
+  );
+  return $result;
+}
+
+function jeniskelamin_menu() {
+  $items['jeniskelamin'] = array(
+    'title' => 'Jenis Kelamin',
+    'description' => 'Referensi Jenis Kelamin',
+    'page callback' => 'jeniskelamin_list',
+    'access callback' => TRUE,
+    'menu_name' => 'refumum',
+  );
+  $items['jeniskelamin/list'] = array(
+    'title' => 'Daftar',
+    'description' => 'Daftar Referensi Jenis Kelamin',
+    'access callback' => TRUE,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -11,
+  );
+  $items['jeniskelamin/add'] = array(
+    'title' => 'Tambah',
+    'description' => 'Tambah referensi jenis kelamin',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'jeniskelamin_add',
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'weight' => -10,
+  );
+  $items['jeniskelamin/%refumum'] = array(
+    'title' => 'Detil Jenis Kelamin',
+    'page callback' => 'jeniskelamin_view',
+    'page arguments' => array(1),
+    'access callback' => 'user_access',
+    'access arguments' => array('view refumum'),
+    'parent' => 'jeniskelamin',
+    'weight' => -10,
+  );
+  $items['jeniskelamin/%refumum/edit'] = array(
+    'title' => 'Edit Jenis Kelamin',
+    'page callback' => 'jeniskelamin_edit',
+    'page arguments' => array(1),
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'parent' => 'jeniskelamin',
+    'weight' => -10,
+  );
+  $items['jeniskelamin/%refumum/drop'] = array(
+    'title' => 'Hapus Jenis Kelamin',
+    'page callback' => 'jeniskelamin_drop',
+    'page arguments' => array(1),
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'parent' => 'jeniskelamin',
+    'weight' => -10,
+  );
+  $items['jeniskelamin/clear'] = array(
+    'title' => 'Kosongkan',
+    'description' => 'Kosongkan referensi jenis kelamin',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'jeniskelamin_clear',
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'weight' => -10,
+  );
+  $items['jeniskelamin/setdefault'] = array(
+    'title' => 'Set Default',
+    'description' => 'Set referensi jenis kelamin ke default',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'jeniskelamin_setdefault',
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'weight' => -10,
+  );
+
+  return $items;
+}
+
+function jeniskelamin_clear() {
+  $output = t('Anda yakin ingin mengosongkan data referensi jenis kelamin ?');
+  $output .= drupal_get_form('jeniskelamin_clearform');
+  return $output;
+}
+
+function jeniskelamin_setdefault() {
+  $output = t('Data default referensi jenis kelamin sebagai berikut');
+  $output .= '<div><ol>';
+  $getdata = _jeniskelamin_default_value();
+  foreach ($getdata as $key => $value) {
+    $output .= '<li>' . $value . '</li>';
+  }
+  $output .= '</ol></div>';
+  $output .= t('Anda yakin ingin set data referensi jenis kelamin ke default ?');
+  $output .= drupal_get_form('jeniskelamin_defaultform');
+  return $output;
+}
+
+function jeniskelamin_view() {
+  $kid = explode('/', drupal_get_path_alias($_GET['q']));
+  $kid = (int)$kid[(count($kid) - 1)];
+  $item = _refumum_getvars('jeniskelamin', 'kid', 'jeniskelamin');
+  $item = $item[$kid];
+  $content = theme(
+    'refumum_detail',
+    array('kode' => $kid, 'Jenis Kelamin' => $item),
+    array('key' => 'kode', 'linkuse' => 'jeniskelamin')
+  );
+//  $content = theme('refumum_detail', 'Detail Jenis Kelamin', 'testaja');
+  unset($item);
+  return $content;
+}
+
+function jeniskelamin_list() {
+  $jkelamin = _refumum_getvars('jeniskelamin', 'kid', 'jeniskelamin');
+  $row_header = array(
+    array(
+      'data' => t('Kode'),
+      'width' => '10%'
+    ),
+    array(
+      'data' => t('Jenis Kelamin'),
+    )
+  );
+  foreach ($jkelamin as $key => $value) {
+    $row[$key][] = $key;
+    $row[$key][] = l($value, 'jeniskelamin/' . $key);
+  } unset($jkelamin, $getvars);
+  $output = t('Halaman ini menampilkan daftar jenis kelamin yang telah terdaftar dalam referensi');
+  $output .= theme('table', $row_header, $row);
+  return $output;
+}
+
+function jeniskelamin_add() {
+  $output = t('Tambah referensi Jenis Kelamin');
+  db_set_active(REFUMUM_DB_USE);
+  $sql = db_query("SELECT 0 FROM {jeniskelamin}");
+  if (db_affected_rows($sql) > 1) {
+    drupal_set_message(t('Referensi jenis kelamin sudah penuh !'));
+  }
+  else {
+    $output .= drupal_get_form('jeniskelamin_refform');
+  } unset($sql);
+  db_set_active('default');
+  return $output;
+}
+
+function jeniskelamin_edit() {
+  $output = t('Edit referensi Jenis Kelamin');
+  $output .= drupal_get_form('jeniskelamin_refedit');
+  return $output;
+}
+
+function jeniskelamin_refedit() {
+  $kid = explode('/', drupal_get_path_alias($_GET['q']));
+  $kid = (int)$kid[(count($kid) - 2)];
+  return _jeniskelamin_getform($kid, 'edit');
+}
+
+function jeniskelamin_refform() {
+  return _jeniskelamin_getform();
+}
+
+function _jeniskelamin_getform($kid=NULL, $op=NULL) {
+  $getcount = _refumum_getvars('jeniskelamin', 'kid', 'jeniskelamin');
+  if (!is_null($op) && $op == 'edit') {
+    $value = array(
+      'kid' => $kid,
+      'jeniskelamin' => $getcount[$kid],
+      'submitval' => 'edit'
+    );
+  }
+  else {
+    $value = array(
+//      'kid' => count($getcount['jeniskelamin']) + 1,
+      'kid' => _refumum_getid('jeniskelamin', 'kid'),
+      'submitval' => 'input'
+    );
+  }
+  unset($getcount);
+  $form['kid'] = array(
+    '#title' => t('Kode'),
+    '#type' => 'textfield',
+    '#size' => '5',
+    '#value' => $value['kid'],
+    '#description' => t('Kode referensi'),
+    '#attributes' => array('readonly' => 'readonly')
+  );
+  $form['jeniskelamin'] = array(
+    '#title' => t('Jenis Kelamin'),
+    '#type' => 'textfield',
+    '#description' => t('Uraian'),
+  );
+  if (isset($value['jeniskelamin'])) {
+    $form['jeniskelamin']['#value'] = $value['jeniskelamin'];
+  }
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t($value['submitval'])
+  );
+  return $form;
+}
+
+/**
+* Validate the form.
+*/
+function jeniskelamin_refform_validate($form, &$form_state) {
+  _jeniskelamin_validate($form, $form_state);
+}
+
+function jeniskelamin_refedit_validate($form, &$form_state) {
+  _jeniskelamin_validate($form, $form_state);
+}
+
+function _jeniskelamin_validate($form, &$form_state) {
+  foreach ($form_state['clicked_button']['#post'] as $key => $value) {
+    if ($key != 'op' && $key != 'form_build_id' && $key != 'form_token' && $key != 'form_id') {
+      if (trim($value) == '') {
+        // We notify the form API that this field has failed validation.
+        $error = array(
+          'key' => $key,
+          'message' => t($key . ' harus terisi !')
+        );
+        break;
+      }
+      elseif ($key == 'kid') {
+        if (!is_numeric(trim($value))) {
+          $error = array(
+            'key' => $key,
+            'message' => t($key . ' harus berupa angka !')
+          );
+          break;
+        }
+        elseif (trim($value) < 1) {
+          $error = array(
+            'key' => $key,
+            'message' => t($key . ' harus bernilai lebih dari 0 !')
+          );
+          break;
+        }
+        else {
+          if ($form_state['clicked_button']['#post']['op'] != 'edit') {
+            db_set_active(REFUMUM_DB_USE);
+            $sql = db_query("SELECT 1 FROM {jeniskelamin} WHERE kid = %d", $value);
+            if (db_affected_rows($sql) > 0) {
+              unset($sql);
+              $error = array(
+                'key' => $key,
+                'message' => t($value . ' pada ' . $key . ' sudah ada !')
+              );
+              break;
+            } unset($sql);
+            db_set_active('default');
+          }
+        }
+      }
+    }
+  }
+
+  if (isset($error)) {
+    form_set_error($error['key'], $error['message']);
+  }
+}
+
+/**
+* Handle post-validation form submission.
+*/
+function jeniskelamin_refform_submit($form, &$form_state) {
+  _jeniskelamin_submit($form, $form_state);
+}
+
+function jeniskelamin_refedit_submit($form, &$form_state) {
+  _jeniskelamin_submit($form, $form_state);
+}
+
+function _jeniskelamin_submit($form, &$form_state) {
+  if ($form_state['clicked_button']['#post']['op'] == 'edit') {
+    $sql = 'UPDATE {jeniskelamin} SET ';
+  }
+  else {
+    $sql = 'INSERT INTO {jeniskelamin} (';
+  }
+  $isi = '';
+  foreach ($form_state['clicked_button']['#post'] as $key => $value) {
+    if ($key != 'op' && $key != 'form_build_id' && $key != 'form_token' && $key != 'form_id') {
+      if (isset($koma)) {
+        $sql .= ', ';
+        $isi .= ', ';
+      }
+      $isi .= $key == 'jeniskelamin' ? "'%s'" : '%d';
+      $sql .= $key . ($form_state['clicked_button']['#post']['op'] == 'edit' ? '=' . ($key == 'jeniskelamin' ? "'%s'" : '%d') : '');
+      $koma = 1;
+    }
+  } unset($koma);
+  db_set_active(REFUMUM_DB_USE);
+  if ($form_state['clicked_button']['#post']['op'] == 'edit') {
+    $sql .= " WHERE kid=%d";
+    $sql = db_query(
+      $sql,
+      $form_state['clicked_button']['#post']['kid'],
+      $form_state['clicked_button']['#post']['jeniskelamin'],
+      $form_state['clicked_button']['#post']['kid']
+    );
+  }
+  else {
+    $sql .= ') VALUES (' . $isi . ')';
+    $sql = db_query(
+      $sql,
+      $form_state['clicked_button']['#post']['kid'],
+      $form_state['clicked_button']['#post']['jeniskelamin']
+    );
+  }
+  db_set_active('default');
+  unset($isi);
+  $name = $form_state['clicked_button']['#post']['jeniskelamin'];
+  drupal_set_message(t('Referensi %name telah ' . ($form_state['clicked_button']['#post']['op'] != 'edit' ? 'ditambahkan' : 'diperbaiki'),
+  array('%name' => $name)));
+  unset($name);
+  $form_state['redirect'] = 'jeniskelamin';
+}
+
+function jeniskelamin_drop() {
+  $kid = explode('/', drupal_get_path_alias($_GET['q']));
+  $kid = (int)$kid[(count($kid) - 2)];
+  $getdata = _refumum_getvars('jeniskelamin', 'kid', 'jeniskelamin');
+  $getdata = $getdata[$kid];
+  $output = t('Anda yakin ingin menghapus ');
+  $output .= '"<strong>' . $getdata . '</strong>" ?';
+  $output .= drupal_get_form('jeniskelamin_dropform');
+  return $output;
+}
+
+function jeniskelamin_dropform() {
+  $kid = explode('/', drupal_get_path_alias($_GET['q']));
+  $kid = (int)$kid[(count($kid) - 2)];
+  $form['kid'] = array(
+    '#value' => $kid,
+    '#type' => 'hidden'
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Ya, Hapus saja !'),
+    '#attributes' => array(
+      'style' => 'color: yellow; font-weight:bold; background: red'
+    )
+  );
+  return $form;
+}
+
+function jeniskelamin_clearform() {
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Ya, Kosongkan saja !'),
+    '#attributes' => array(
+      'style' => 'color: yellow; font-weight:bold; background: red'
+    )
+  );
+  return $form;
+}
+
+function jeniskelamin_defaultform() {
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Ya, set default saja !'),
+    '#attributes' => array(
+      'style' => 'color: red; font-weight:bold; background: yellow'
+    )
+  );
+  return $form;
+}
+
+function jeniskelamin_defaultform_submit($form, &$form_state) {
+  _refumum_clear_data('jeniskelamin');
+  _jeniskelamin_set_to_default();
+  drupal_set_message(t('Referensi jenis kelamin telah diseting ke default'));
+  $form_state['redirect'] = 'jeniskelamin';
+}
+
+function jeniskelamin_clearform_submit($form, &$form_state) {
+  _refumum_clear_data('jeniskelamin');
+  drupal_set_message(t('Referensi jenis kelamin telah dikosongkan'));
+  $form_state['redirect'] = 'jeniskelamin';
+}
+
+function jeniskelamin_dropform_submit($form, &$form_state) {
+  $kid = $form_state['clicked_button']['#post']['kid'];
+  $getdata = _refumum_getvars('jeniskelamin', 'kid', 'jeniskelamin');
+  _refumum_drop('jeniskelamin', 'kid', $kid);
+  $name = $getdata[(int)$kid];
+  unset($getdata);
+  drupal_set_message(t('Referensi %name telah dihapus',
+  array('%name' => $name)));
+  unset($name);
+  $form_state['redirect'] = 'jeniskelamin';
+}
+
+function _jeniskelamin_set_to_default() {
+  $getvalues = _jeniskelamin_default_value();
+  db_set_active(REFUMUM_DB_USE);
+  foreach ($getvalues as $key => $value) {
+    db_query("INSERT INTO {jeniskelamin} (kid, jeniskelamin) VALUES (%d, '%s')",
+      $key, $value
+    );
+  }
+  db_set_active('default');
+}

@@ -1,0 +1,40 @@
+/* 
+    Document   : refumum
+    Created on : May 31, 2010, 11:00:14 AM
+    Author     : denic
+    Description:
+        Purpose of the stylesheet follows.
+*/
+
+/* 
+   TODO customize this sample style
+   Syntax recommendation http://www.w3.org/TR/REC-CSS2/
+*/
+
+root { 
+    display: block;
+}
+
+#refumum-detail-block {
+  width: 650px;
+  clear: both;
+}
+
+#refumum-detail-key {
+  width: 150px;
+  float: left;
+  font-weight: bold;
+}
+
+#refumum-detail-value {
+  width: 363px;
+  float: left;
+}
+
+#refumum-drop {
+  width: 150px;
+  float: left;
+  font-weight: bold;
+  color: red;
+}
+

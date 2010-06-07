@@ -1,0 +1,445 @@
+<?php
+/* 
+ *  Copyright (c) 2010 Denic Wibowo<denicwibowo@gmail.com>.
+ *  All rights reserved.
+ *  
+ *  This program is free software; you can redistribute it and/or modify it 
+ *  under the terms of the GNU General Public License as published by the 
+ *  Free Software Foundation; either version 2 of the License, or 
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful, but 
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of 
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General 
+ *  Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License along 
+ *  with this program; if not, write to the Free Software Foundation, Inc., 
+ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ *  
+ *  namahari.module
+ *  
+ *  Created on Jan 15, 2010, 9:05:34 PM
+ */
+
+// $Id$
+
+/**
+* @file
+* Provides a "custom variables" node type.
+*/
+
+function _namahari_default_value() {
+  $result = array(
+    0 => 'Minggu',
+    1 => 'Senin',
+    2 => 'Selasa',
+    3 => 'Rabu',
+    4 => 'Kamis',
+    5 => 'Jumat',
+    6 => 'Sabtu',
+  );
+  return $result;
+}
+
+function namahari_menu() {
+  $items['namahari'] = array(
+    'title' => 'Nama Hari',
+    'description' => 'Referensi Nama Hari',
+    'page callback' => 'namahari_list',
+    'access callback' => TRUE,
+    'menu_name' => 'refumum',
+  );
+  $items['namahari/list'] = array(
+    'title' => 'Daftar',
+    'description' => 'Daftar Referensi Nama Hari',
+    'access callback' => TRUE,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -11,
+  );
+  $items['namahari/add'] = array(
+    'title' => 'Tambah',
+    'description' => 'Tambah referensi Nama Hari',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'namahari_add',
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'weight' => -10,
+  );
+  $items['namahari/%refumum'] = array(
+    'title' => 'Detil Nama Hari',
+    'page callback' => 'namahari_view',
+    'page arguments' => array(1),
+    'access callback' => 'user_access',
+    'access arguments' => array('view refumum'),
+    'parent' => 'namahari',
+    'weight' => -10,
+  );
+  $items['namahari/%refumum/edit'] = array(
+    'title' => 'Edit Nama Hari',
+    'page callback' => 'namahari_edit',
+    'page arguments' => array(1),
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'parent' => 'namahari',
+    'weight' => -10,
+  );
+  $items['namahari/%refumum/drop'] = array(
+    'title' => 'Hapus Nama Hari',
+    'page callback' => 'namahari_drop',
+    'page arguments' => array(1),
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'parent' => 'namahari',
+    'weight' => -10,
+  );
+  $items['namahari/clear'] = array(
+    'title' => 'Kosongkan',
+    'description' => 'Kosongkan referensi Nama Hari',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'namahari_clear',
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'weight' => -10,
+  );
+  $items['namahari/setdefault'] = array(
+    'title' => 'Set Default',
+    'description' => 'Set referensi Nama Hari ke default',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'namahari_setdefault',
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'weight' => -10,
+  );
+
+  return $items;
+}
+
+function namahari_clear() {
+  $output = t('Anda yakin ingin mengosongkan data referensi Nama Hari ?');
+  $output .= drupal_get_form('namahari_clearform');
+  return $output;
+}
+
+function namahari_setdefault() {
+  $output = t('Data default referensi Nama Hari sebagai berikut');
+  $output .= '<div><ol>';
+  $getdata = _namahari_default_value();
+  foreach ($getdata as $key => $value) {
+    $output .= '<li>' . $value . '</li>';
+  }
+  $output .= '</ol></div>';
+  $output .= t('Anda yakin ingin set data referensi Nama Hari ke default ?');
+  $output .= drupal_get_form('namahari_defaultform');
+  return $output;
+}
+
+function namahari_view() {
+  $hid = explode('/', drupal_get_path_alias($_GET['q']));
+  $hid = (int)$hid[(count($hid) - 1)];
+  $item = _refumum_getvars('namahari', 'hid', 'namahari');
+  $item = $item[$hid];
+  $content = theme(
+    'refumum_detail',
+    array('kode' => $hid, 'Nama Hari' => $item),
+    array('key' => 'kode', 'linkuse' => 'namahari')
+  );
+//  $content = theme('refumum_detail', 'Detail Nama Hari', 'testaja');
+  unset($item);
+  return $content;
+}
+
+function namahari_list() {
+  $namahari = _refumum_getvars('namahari', 'hid', 'namahari');
+  $row_header = array(
+    array(
+      'data' => t('Kode'),
+      'width' => '10%'
+    ),
+    array(
+      'data' => t('Nama Hari'),
+    )
+  );
+  foreach ($namahari as $key => $value) {
+    $row[$key][] = $key;
+    $row[$key][] = l($value, 'namahari/' . $key);
+  } unset($namahari, $getvars);
+  $output = t('Halaman ini menampilkan daftar Nama Hari yang telah terdaftar dalam referensi');
+  $output .= theme('table', $row_header, $row);
+  return $output;
+}
+
+function namahari_add() {
+  $output = t('Tambah referensi Nama Hari');
+  db_set_active(REFUMUM_DB_USE);
+  $sql = db_query("SELECT 0 FROM {namahari}");
+  if (db_affected_rows($sql) > 6) {
+    drupal_set_message(t('Referensi Nama Hari sudah penuh !'));
+  }
+  else {
+    $output .= drupal_get_form('namahari_refform');
+  } unset($sql);
+  db_set_active('default');
+  return $output;
+}
+
+function namahari_edit() {
+  $output = t('Edit referensi Nama Hari');
+  $output .= drupal_get_form('namahari_refedit');
+  return $output;
+}
+
+function namahari_refedit() {
+  $hid = explode('/', drupal_get_path_alias($_GET['q']));
+  $hid = (int)$hid[(count($hid) - 2)];
+  return _namahari_getform($hid, 'edit');
+}
+
+function namahari_refform() {
+  return _namahari_getform();
+}
+
+function _namahari_getform($hid=NULL, $op=NULL) {
+  $getcount = _refumum_getvars('namahari', 'hid', 'namahari');
+  if (!is_null($op) && $op == 'edit') {
+    $value = array(
+      'hid' => $hid,
+      'namahari' => $getcount[$hid],
+      'submitval' => 'edit'
+    );
+  }
+  else {
+    $value = array(
+//      'hid' => count($getcount['namahari']) + 1,
+      'hid' => _refumum_getid('namahari', 'hid'),
+      'submitval' => 'input'
+    );
+  }
+  unset($getcount);
+  $form['hid'] = array(
+    '#title' => t('Kode'),
+    '#type' => 'textfield',
+    '#size' => '5',
+    '#value' => $value['hid'],
+    '#description' => t('Kode referensi'),
+    '#attributes' => array('readonly' => 'readonly')
+  );
+  $form['namahari'] = array(
+    '#title' => t('Nama Hari'),
+    '#type' => 'textfield',
+    '#description' => t('Uraian'),
+  );
+  if (isset($value['namahari'])) {
+    $form['namahari']['#value'] = $value['namahari'];
+  }
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t($value['submitval'])
+  );
+  return $form;
+}
+
+/**
+* Validate the form.
+*/
+function namahari_refform_validate($form, &$form_state) {
+  _namahari_validate($form, $form_state);
+}
+
+function namahari_refedit_validate($form, &$form_state) {
+  _namahari_validate($form, $form_state);
+}
+
+function _namahari_validate($form, &$form_state) {
+  foreach ($form_state['clicked_button']['#post'] as $key => $value) {
+    if ($key != 'op' && $key != 'form_build_id' && $key != 'form_token' && $key != 'form_id') {
+      if (trim($value) == '') {
+        // We notify the form API that this field has failed validation.
+        $error = array(
+          'key' => $key,
+          'message' => t($key . ' harus terisi !')
+        );
+        break;
+      }
+      elseif ($key == 'hid') {
+        if (!is_numeric(trim($value))) {
+          $error = array(
+            'key' => $key,
+            'message' => t($key . ' harus berupa angka !')
+          );
+          break;
+        }
+        elseif (trim($value) < 1) {
+          $error = array(
+            'key' => $key,
+            'message' => t($key . ' harus bernilai lebih dari 0 !')
+          );
+          break;
+        }
+        else {
+          if ($form_state['clicked_button']['#post']['op'] != 'edit') {
+            db_set_active(REFUMUM_DB_USE);
+            $sql = db_query("SELECT 1 FROM {namahari} WHERE hid = %d", $value);
+            if (db_affected_rows($sql) > 0) {
+              unset($sql);
+              $error = array(
+                'key' => $key,
+                'message' => t($value . ' pada ' . $key . ' sudah ada !')
+              );
+              break;
+            } unset($sql);
+            db_set_active('default');
+          }
+        }
+      }
+    }
+  }
+
+  if (isset($error)) {
+    form_set_error($error['key'], $error['message']);
+  }
+}
+
+/**
+* Handle post-validation form submission.
+*/
+function namahari_refform_submit($form, &$form_state) {
+  _namahari_submit($form, $form_state);
+}
+
+function namahari_refedit_submit($form, &$form_state) {
+  _namahari_submit($form, $form_state);
+}
+
+function _namahari_submit($form, &$form_state) {
+  if ($form_state['clicked_button']['#post']['op'] == 'edit') {
+    $sql = 'UPDATE {namahari} SET ';
+  }
+  else {
+    $sql = 'INSERT INTO {namahari} (';
+  }
+  $isi = '';
+  foreach ($form_state['clicked_button']['#post'] as $key => $value) {
+    if ($key != 'op' && $key != 'form_build_id' && $key != 'form_token' && $key != 'form_id') {
+      if (isset($koma)) {
+        $sql .= ', ';
+        $isi .= ', ';
+      }
+      $isi .= $key == 'namahari' ? "'%s'" : '%d';
+      $sql .= $key . ($form_state['clicked_button']['#post']['op'] == 'edit' ? '=' . ($key == 'namahari' ? "'%s'" : '%d') : '');
+      $koma = 1;
+    }
+  } unset($koma);
+  db_set_active(REFUMUM_DB_USE);
+  if ($form_state['clicked_button']['#post']['op'] == 'edit') {
+    $sql .= " WHERE hid=%d";
+    $sql = db_query(
+      $sql,
+      $form_state['clicked_button']['#post']['hid'],
+      $form_state['clicked_button']['#post']['namahari'],
+      $form_state['clicked_button']['#post']['hid']
+    );
+  }
+  else {
+    $sql .= ') VALUES (' . $isi . ')';
+    $sql = db_query(
+      $sql,
+      $form_state['clicked_button']['#post']['hid'],
+      $form_state['clicked_button']['#post']['namahari']
+    );
+  }
+  unset($isi);
+  db_set_active('default');
+  $name = $form_state['clicked_button']['#post']['namahari'];
+  drupal_set_message(t('Referensi %name telah ' . ($form_state['clicked_button']['#post']['op'] != 'edit' ? 'ditambahkan' : 'diperbaiki'),
+  array('%name' => $name)));
+  unset($name);
+  $form_state['redirect'] = 'namahari';
+}
+
+function namahari_drop() {
+  $hid = explode('/', drupal_get_path_alias($_GET['q']));
+  $hid = (int)$hid[(count($hid) - 2)];
+  $getdata = _refumum_getvars('namahari', 'hid', 'namahari');
+  $getdata = $getdata[$hid];
+  $output = t('Anda yakin ingin menghapus ');
+  $output .= '"<strong>' . $getdata . '</strong>" ?';
+  $output .= drupal_get_form('namahari_dropform');
+  return $output;
+}
+
+function namahari_dropform() {
+  $hid = explode('/', drupal_get_path_alias($_GET['q']));
+  $hid = (int)$hid[(count($hid) - 2)];
+  $form['hid'] = array(
+    '#value' => $hid,
+    '#type' => 'hidden'
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Ya, Hapus saja !'),
+    '#attributes' => array(
+      'style' => 'color: yellow; font-weight:bold; background: red'
+    )
+  );
+  return $form;
+}
+
+function namahari_clearform() {
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Ya, Kosongkan saja !'),
+    '#attributes' => array(
+      'style' => 'color: yellow; font-weight:bold; background: red'
+    )
+  );
+  return $form;
+}
+
+function namahari_defaultform() {
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Ya, set default saja !'),
+    '#attributes' => array(
+      'style' => 'color: red; font-weight:bold; background: yellow'
+    )
+  );
+  return $form;
+}
+
+function namahari_dropform_submit($form, &$form_state) {
+  $hid = $form_state['clicked_button']['#post']['hid'];
+  $getdata = _refumum_getvars('namahari', 'hid', 'namahari');
+  _refumum_drop('namahari', 'hid', $hid);
+  $name = $getdata[(int)$hid];
+  unset($getdata);
+  drupal_set_message(t('Referensi %name telah dihapus',
+  array('%name' => $name)));
+  unset($name);
+  $form_state['redirect'] = 'namahari';
+}
+
+function namahari_defaultform_submit($form, &$form_state) {
+  _refumum_clear_data('namahari');
+  _namahari_set_to_default();
+  drupal_set_message(t('Referensi Nama Hari telah diseting ke default'));
+  $form_state['redirect'] = 'namahari';
+}
+
+function namahari_clearform_submit($form, &$form_state) {
+  _refumum_clear_data('namahari');
+  drupal_set_message(t('Referensi Nama Hari telah dikosongkan'));
+  $form_state['redirect'] = 'namahari';
+}
+
+function _namahari_set_to_default() {
+  $getvalues = _namahari_default_value();
+  db_set_active(REFUMUM_DB_USE);
+  foreach ($getvalues as $key => $value) {
+    db_query("INSERT INTO {namahari} (hid, namahari) VALUES (%d, '%s')",
+      $key, $value
+    );
+  }
+  db_set_active('default');
+}

@@ -1,0 +1,6 @@
+; $Id$
+name = Referensi Jenis Kelamin
+description = Custom gender references
+dependencies[] = refumum
+package = oscity.org
+core = 6.x

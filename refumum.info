@@ -1,0 +1,5 @@
+; $Id$
+name = Referensi Umum
+description = Create custom references
+package = oscity.org
+core = 6.x

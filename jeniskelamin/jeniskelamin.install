@@ -1,0 +1,79 @@
+<?php
+/* 
+ *  Copyright (c) 2010 Denic Wibowo<denicwibowo@gmail.com>.
+ *  All rights reserved.
+ *  
+ *  This program is free software; you can redistribute it and/or modify it 
+ *  under the terms of the GNU General Public License as published by the 
+ *  Free Software Foundation; either version 2 of the License, or 
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful, but 
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of 
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General 
+ *  Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License along 
+ *  with this program; if not, write to the Free Software Foundation, Inc., 
+ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ *  
+ *  jeniskelamin.install
+ *  
+ *  Created on May 25, 2010, 4:56:08 PM
+ */
+
+/**
+ * @file
+ *   Install file for refumum module.
+ */
+// $Id: refumum.install,v 0.1.0.0 2010/06/06 21:01:09 dnc Exp $
+// $Id$
+
+/**
+* Implementation of hook_install().
+*/
+function jeniskelamin_install() {
+  //Create table staf
+  db_set_active(REFUMUM_DB_USE);
+  if (db_table_exists('jeniskelamin') !== TRUE) {
+    drupal_install_schema('jeniskelamin');
+  }
+  db_set_active('default');
+  menu_rebuild();
+}
+
+/**
+* Implementation of hook_uninstall().
+*/
+function jeniskelamin_uninstall() {
+    //Create table staf
+  db_set_active(REFUMUM_DB_USE);
+  drupal_uninstall_schema('jeniskelamin');
+  db_set_active('default');
+  menu_rebuild();
+}
+
+/**
+* Implementation of hook_schema().
+*/
+function jeniskelamin_schema() {
+    $schema['jeniskelamin'] = array(
+        'description' => t('Stores jenis kelamin references'),
+        'fields' => array(
+            'kid' => array(
+                'type' => 'int',
+                'unsigned' => FALSE,
+                'not null' => TRUE,
+                'description' => t('The primary key of it\'s table.'),
+            ),
+            'jeniskelamin' => array(
+                'type' => 'varchar',
+                'not null' => TRUE,
+                'length' => '32',
+                'description' => t('string isian jenis kelamin'),
+            ),
+        ),
+        'primary key' => array('kid'),
+    );
+    return $schema;
+}

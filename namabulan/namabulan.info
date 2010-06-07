@@ -1,0 +1,6 @@
+; $Id$
+name = Referensi Nama Bulan
+description = Custom month name references
+dependencies[] = refumum
+package = oscity.org
+core = 6.x

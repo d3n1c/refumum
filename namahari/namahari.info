@@ -1,0 +1,6 @@
+; $Id$
+name = Referensi Nama Hari
+description = Custom day name references
+dependencies[] = refumum
+package = oscity.org
+core = 6.x

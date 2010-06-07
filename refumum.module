@@ -1,0 +1,173 @@
+<?php
+/* 
+ *  Copyright (c) 2010 Denic Wibowo<denicwibowo@gmail.com>.
+ *  All rights reserved.
+ *  
+ *  This program is free software; you can redistribute it and/or modify it 
+ *  under the terms of the GNU General Public License as published by the 
+ *  Free Software Foundation; either version 2 of the License, or 
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful, but 
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of 
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General 
+ *  Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License along 
+ *  with this program; if not, write to the Free Software Foundation, Inc., 
+ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ *  
+ *  refumum.module
+ *  
+ *  Created on Jan 15, 2010, 9:05:34 PM
+ */
+
+// $Id$
+
+/**
+* @file
+* Provides a "custom variables" node type.
+*/
+
+if (!defined('REFUMUM_DB_USE')) {
+  define('REFUMUM_DB_USE', 'pegawai');
+}
+
+//function refumum_menu() {
+//  $items = array();
+//  return $items;
+//}
+
+function refumum_theme() {
+  return array(
+    'refumum_detail' => array(
+      'path' => drupal_get_path('module', 'refumum'),
+      'arguments' => array('datadetail' => array()),
+    ),
+  );
+}
+
+function theme_refumum_detail($datadetail = array(), $datakey = array()) {
+  $module_path = drupal_get_path('module', 'refumum');
+  $itcss_path = $module_path . '/refumum.css';
+  unset($module_path);
+  drupal_add_css($itcss_path);
+  unset($itcss_path);
+  $output = '<div><br />';
+  if (count($datadetail) > 0) {
+    foreach ($datadetail as $key => $value) {
+      $output .= '<div id="refumum-detail-block">';
+      $output .= '<div id="refumum-detail-key">' . ucwords(t($key)) . '</div>';
+      $output .= '<div id="refumum-detail-value">: ' . $value . '</div>';
+      $output .= '</div>';
+    }
+  }
+  if (user_access('edit refumum')) {
+    $output .= '</div>';
+    $output .= '<div id="refumum-detail-block"><br />';
+    $output .= '<div id="refumum-detail-key">&nbsp;</div>';
+    $output .= '<div id="refumum-detail-key">';
+    $output .= l(ucwords(t('edit')), $datakey['linkuse'] . '/' . $datadetail[$datakey['key']] . '/edit');
+    $output .= '</div>';
+    $output .= '<div id="refumum-drop">';
+    $output .= l(ucwords(t('hapus')), $datakey['linkuse'] . '/' . $datadetail[$datakey['key']] . '/drop');
+    $output .= '</div>';
+  }
+  $output .= '<div>&nbsp;<br /><br /></div>';
+  return $output;
+}
+
+function refumum_load($arg) {
+  return (int)$arg;
+}
+
+/**
+* Implementation of hook_perm().
+*/
+function refumum_perm() {
+  return array('view refumum', 'edit refumum');
+}
+
+function _refumum_getvars($tabel, $prikey, $name) {
+  //get reference of jenis kelamin
+  db_set_active(REFUMUM_DB_USE);
+  $sql = db_query("SELECT * FROM {" . $tabel . "} ORDER BY " . $prikey);
+  $result = array();
+  while ($rslt = db_fetch_object($sql)) {
+    $result[$rslt->$prikey] = $rslt->$name;
+  } unset($sql, $rslt);
+  
+  db_set_active('default');
+  return $result;
+}
+
+function _refumum_getid($tabeluse, $keyuse) {
+  $result = 1;
+  db_set_active(REFUMUM_DB_USE);
+  $sql = db_query("SELECT %s FROM {%s} ORDER BY %s", $keyuse, $tabeluse, $keyuse);
+  $numsql = db_affected_rows($sql);
+  while ($result <= $numsql) {
+    $checkit = db_query("SELECT %s FROM {%s} WHERE %s=%d", $keyuse, $tabeluse, $keyuse, $result);
+    if (db_affected_rows($checkit) < 1) {
+      break;
+    } unset($checkit);
+    $result++;
+  } unset($checkit, $sql, $numsql);
+  db_set_active('default');
+  return $result;
+}
+
+function _refumum_drop($tabeluse, $keyuse, $thekey) {
+  db_set_active(REFUMUM_DB_USE);
+  db_query(
+    "DELETE FROM {%s} WHERE %s=%d",
+    $tabeluse,
+    $keyuse,
+    $thekey
+  );
+  db_set_active('default');
+}
+
+/**
+* Implementation of hook_block().
+*/
+function refumum_block($op = 'list', $delta = 0, $edit = array()) {
+  $items = array();
+  if (function_exists('agama_menu')) {
+    $items[] = l(t('Agama'), 'agama');
+  }
+  if (function_exists('jeniskelamin_menu')) {
+    $items[] = l(t('Jenis Kelamin'), 'jeniskelamin');
+  }
+  if (function_exists('namabulan_menu')) {
+    $items[] = l(t('Nama Bulan'), 'namabulan');
+  }
+  if (function_exists('namahari_menu')) {
+    $items[] = l(t('Nama Hari'), 'namahari');
+  }
+  switch ($op) {
+    case 'list':
+      $blocks[0] = array(
+        'info' => t('Referensi Umum'),
+        'cache' => BLOCK_CACHE_GLOBAL,
+        'status' => count($items) > 0 ? TRUE : FALSE,
+        'region' => 'left',
+        'custom' => FALSE,
+        'title' => t('Referensi Umum')
+      );
+      return $blocks;
+
+    case 'view':
+      if (user_access('view refumum')) {
+        $block['subject'] = '<none>';
+        $block['content'] = theme('item_list', $items);
+      }
+      return $block;
+  }
+}
+
+function _refumum_clear_data($table) {
+  db_set_active(REFUMUM_DB_USE);
+  db_query("DELETE FROM {" . $table . "}");
+  db_set_active('default');
+}

@@ -1,0 +1,6 @@
+; $Id$
+name = Referensi Agama
+description = Custom religion references
+dependencies[] = refumum
+package = oscity.org
+core = 6.x

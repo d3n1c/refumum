@@ -1,0 +1,436 @@
+<?php
+/* 
+ *  Copyright (c) 2010 Denic Wibowo<denicwibowo@gmail.com>.
+ *  All rights reserved.
+ *  
+ *  This program is free software; you can redistribute it and/or modify it 
+ *  under the terms of the GNU General Public License as published by the 
+ *  Free Software Foundation; either version 2 of the License, or 
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful, but 
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of 
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General 
+ *  Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License along 
+ *  with this program; if not, write to the Free Software Foundation, Inc., 
+ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ *  
+ *  agama.module
+ *  
+ *  Created on Jan 15, 2010, 9:05:34 PM
+ */
+
+// $Id$
+
+/**
+* @file
+* Provides a "custom variables" node type.
+*/
+
+function _agama_default_value() {
+  $result = array(
+    1 => 'Islam',
+    2 => 'Kristen Katolik',
+    3 => 'Kristen Protestan',
+    4 => 'Hindu',
+    5 => 'Budha',
+    6 => 'Lainnya'
+  );
+  return $result;
+}
+
+function agama_menu() {
+  $items['agama'] = array(
+    'title' => 'Agama',
+    'description' => 'Referensi Agama',
+    'page callback' => 'agama_list',
+    'access callback' => TRUE,
+    'menu_name' => 'refumum',
+  );
+  $items['agama/list'] = array(
+    'title' => 'Daftar',
+    'description' => 'Daftar Referensi Agama',
+    'access callback' => TRUE,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -11,
+  );
+  $items['agama/add'] = array(
+    'title' => 'Tambah',
+    'description' => 'Tambah referensi agama',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'agama_add',
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'weight' => -10,
+  );
+  $items['agama/%refumum'] = array(
+    'title' => 'Detil Agama',
+    'page callback' => 'agama_view',
+    'page arguments' => array(1),
+    'access callback' => 'user_access',
+    'access arguments' => array('view refumum'),
+    'parent' => 'agama',
+    'weight' => -10,
+  );
+  $items['agama/%refumum/edit'] = array(
+    'title' => 'Edit Agama',
+    'page callback' => 'agama_edit',
+    'page arguments' => array(1),
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'parent' => 'agama',
+    'weight' => -10,
+  );
+  $items['agama/%refumum/drop'] = array(
+    'title' => 'Hapus Agama',
+    'page callback' => 'agama_drop',
+    'page arguments' => array(1),
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'parent' => 'agama',
+    'weight' => -10,
+  );
+  $items['agama/clear'] = array(
+    'title' => 'Kosongkan',
+    'description' => 'Kosongkan referensi agama',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'agama_clear',
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'weight' => -10,
+  );
+  $items['agama/setdefault'] = array(
+    'title' => 'Set Default',
+    'description' => 'Set referensi agama ke default',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'agama_setdefault',
+    'access callback' => 'user_access',
+    'access arguments' => array('edit refumum'),
+    'weight' => -10,
+  );
+
+  return $items;
+}
+
+function agama_clear() {
+  $output = t('Anda yakin ingin mengosongkan data referensi agama ?');
+  $output .= drupal_get_form('agama_clearform');
+  return $output;
+}
+
+function agama_setdefault() {
+  $output = t('Data default referensi agama sebagai berikut');
+  $output .= '<div><ol>';
+  $getdata = _agama_default_value();
+  foreach ($getdata as $key => $value) {
+    $output .= '<li>' . $value . '</li>';
+  }
+  $output .= '</ol></div>';
+  $output .= t('Anda yakin ingin set data referensi agama ke default ?');
+  $output .= drupal_get_form('agama_defaultform');
+  return $output;
+}
+
+function agama_view() {
+  $aid = explode('/', drupal_get_path_alias($_GET['q']));
+  $aid = (int)$aid[(count($aid) - 1)];
+  $item = _refumum_getvars('agama', 'aid', 'agama');
+  $item = $item[$aid];
+  $content = theme(
+    'refumum_detail',
+    array('kode' => $aid, 'Agama' => $item),
+    array('key' => 'kode', 'linkuse' => 'agama')
+  );
+//  $content = theme('refumum_detail', 'Detail Agama', 'testaja');
+  unset($item);
+  return $content;
+}
+
+function agama_list() {
+  $getvars = _refumum_getvars('agama', 'aid', 'agama');
+  $agama = $getvars;
+  $row_header = array(
+    array(
+      'data' => t('Kode'),
+      'width' => '10%'
+    ),
+    array(
+      'data' => t('Agama'),
+    )
+  );
+  foreach ($agama as $key => $value) {
+    $row[$key][] = $key;
+    $row[$key][] = l($value, 'agama/' . $key);
+  } unset($jkelamin, $getvars);
+  $output = t('Halaman ini menampilkan daftar agama yang telah terdaftar dalam referensi');
+  $output .= theme('table', $row_header, $row);
+  return $output;
+}
+
+function agama_add() {
+  $output = t('Tambah referensi Agama');
+  $output .= drupal_get_form('agama_refform');
+  return $output;
+}
+
+function agama_edit() {
+  $output = t('Edit referensi Agama');
+  $output .= drupal_get_form('agama_refedit');
+  return $output;
+}
+
+function agama_refedit() {
+  $aid = explode('/', drupal_get_path_alias($_GET['q']));
+  $aid = (int)$aid[(count($aid) - 2)];
+  return _agama_getform($aid, 'edit');
+}
+
+function agama_refform() {
+  return _agama_getform();
+}
+
+function _agama_getform($aid=NULL, $op=NULL) {
+  $getcount = _refumum_getvars('agama', 'aid', 'agama');
+  if (!is_null($op) && $op == 'edit') {
+    $value = array(
+      'aid' => $aid,
+      'agama' => $getcount[$aid],
+      'submitval' => 'edit'
+    );
+  }
+  else {
+    $value = array(
+      'aid' => _refumum_getid('agama', 'aid'),
+      'submitval' => 'input'
+    );
+  }
+  unset($getcount);
+  $form['aid'] = array(
+    '#title' => t('Kode'),
+    '#type' => 'textfield',
+    '#size' => '5',
+    '#value' => $value['aid'],
+    '#description' => t('Kode referensi'),
+    '#attributes' => array('readonly' => 'readonly')
+  );
+  $form['agama'] = array(
+    '#title' => t('Agama'),
+    '#type' => 'textfield',
+    '#description' => t('Uraian'),
+  );
+  if (isset($value['agama'])) {
+    $form['agama']['#value'] = $value['agama'];
+  }
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t($value['submitval'])
+  );
+  return $form;
+}
+
+/**
+* Validate the form.
+*/
+function agama_refform_validate($form, &$form_state) {
+  _agama_validate($form, $form_state);
+}
+
+function agama_refedit_validate($form, &$form_state) {
+  _agama_validate($form, $form_state);
+}
+
+function _agama_validate($form, &$form_state) {
+  foreach ($form_state['clicked_button']['#post'] as $key => $value) {
+    if ($key != 'op' && $key != 'form_build_id' && $key != 'form_token' && $key != 'form_id') {
+      if (trim($value) == '') {
+        // We notify the form API that this field has failed validation.
+        $error = array(
+          'key' => $key,
+          'message' => t($key . ' harus terisi !')
+        );
+        break;
+      }
+      elseif ($key == 'aid') {
+        if (!is_numeric(trim($value))) {
+          $error = array(
+            'key' => $key,
+            'message' => t($key . ' harus berupa angka !')
+          );
+          break;
+        }
+        elseif (trim($value) < 1) {
+          $error = array(
+            'key' => $key,
+            'message' => t($key . ' harus bernilai lebih dari 0 !')
+          );
+          break;
+        }
+        else {
+          if ($form_state['clicked_button']['#post']['op'] != 'edit') {
+            db_set_active(REFUMUM_DB_USE);
+            $sql = db_query("SELECT 1 FROM {agama} WHERE aid = %d", $value);
+            if (db_affected_rows($sql) > 0) {
+              unset($sql);
+              $error = array(
+                'key' => $key,
+                'message' => t($value . ' pada ' . $key . ' sudah ada !')
+              );
+              break;
+            } unset($sql);
+            db_set_active('default');
+          }
+        }
+      }
+    }
+  }
+
+  if (isset($error)) {
+    form_set_error($error['key'], $error['message']);
+  }
+}
+
+/**
+* Handle post-validation form submission.
+*/
+function agama_refform_submit($form, &$form_state) {
+  _agama_submit($form, $form_state);
+}
+
+function agama_refedit_submit($form, &$form_state) {
+  _agama_submit($form, $form_state);
+}
+
+function _agama_submit($form, &$form_state) {
+  if ($form_state['clicked_button']['#post']['op'] == 'edit') {
+    $sql = 'UPDATE {agama} SET ';
+  }
+  else {
+    $sql = 'INSERT INTO {agama} (';
+  }
+  $isi = '';
+  foreach ($form_state['clicked_button']['#post'] as $key => $value) {
+    if ($key != 'op' && $key != 'form_build_id' && $key != 'form_token' && $key != 'form_id') {
+      if (isset($koma)) {
+        $sql .= ', ';
+        $isi .= ', ';
+      }
+      $isi .= $key == 'agama' ? "'%s'" : '%d';
+      $sql .= $key . ($form_state['clicked_button']['#post']['op'] == 'edit' ? '=' . ($key == 'agama' ? "'%s'" : '%d') : '');
+      $koma = 1;
+    }
+  } unset($koma);
+  db_set_active(REFUMUM_DB_USE);
+  if ($form_state['clicked_button']['#post']['op'] == 'edit') {
+    $sql .= " WHERE aid=%d";
+    $sql = db_query(
+      $sql,
+      $form_state['clicked_button']['#post']['aid'],
+      $form_state['clicked_button']['#post']['agama'],
+      $form_state['clicked_button']['#post']['aid']
+    );
+  }
+  else {
+    $sql .= ') VALUES (' . $isi . ')';
+    $sql = db_query(
+      $sql,
+      $form_state['clicked_button']['#post']['aid'],
+      $form_state['clicked_button']['#post']['agama']
+    );
+  }
+  unset($isi);
+  db_set_active('default');
+  $name = $form_state['clicked_button']['#post']['agama'];
+  drupal_set_message(t('Referensi %name telah ' . ($form_state['clicked_button']['#post']['op'] != 'edit' ? 'ditambahkan' : 'diperbaiki'),
+  array('%name' => $name)));
+  unset($name);
+  $form_state['redirect'] = 'agama';
+}
+
+function agama_drop() {
+  $aid = explode('/', drupal_get_path_alias($_GET['q']));
+  $aid = (int)$aid[(count($aid) - 2)];
+  $getdata = _refumum_getvars('agama', 'aid', 'agama');
+  $getdata = $getdata[$aid];
+  $output = t('Anda yakin ingin menghapus ');
+  $output .= '"<strong>' . $getdata . '</strong>" ?';
+  $output .= drupal_get_form('agama_dropform');
+  return $output;
+}
+
+function agama_dropform() {
+  $aid = explode('/', drupal_get_path_alias($_GET['q']));
+  $aid = (int)$aid[(count($aid) - 2)];
+  $form['aid'] = array(
+    '#value' => $aid,
+    '#type' => 'hidden'
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Ya, Hapus saja !'),
+    '#attributes' => array(
+      'style' => 'color: yellow; font-weight:bold; background: red'
+    )
+  );
+  return $form;
+}
+
+function agama_clearform() {
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Ya, Kosongkan saja !'),
+    '#attributes' => array(
+      'style' => 'color: yellow; font-weight:bold; background: red'
+    )
+  );
+  return $form;
+}
+
+function agama_defaultform() {
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Ya, set default saja !'),
+    '#attributes' => array(
+      'style' => 'color: red; font-weight:bold; background: yellow'
+    )
+  );
+  return $form;
+}
+
+function agama_dropform_submit($form, &$form_state) {
+  $aid = $form_state['clicked_button']['#post']['aid'];
+  $getdata = _refumum_getvars('agama', 'aid', 'agama');
+  _refumum_drop('agama', 'aid', $aid);
+  $name = $getdata[(int)$aid];
+  unset($getdata);
+  drupal_set_message(t('Referensi %name telah dihapus',
+  array('%name' => $name)));
+  unset($name);
+  $form_state['redirect'] = 'agama';
+}
+
+function agama_defaultform_submit($form, &$form_state) {
+  _refumum_clear_data('agama');
+  _agama_set_to_default();
+  drupal_set_message(t('Referensi agama telah diseting ke default'));
+  $form_state['redirect'] = 'agama';
+}
+
+function agama_clearform_submit($form, &$form_state) {
+  _refumum_clear_data('agama');
+  drupal_set_message(t('Referensi agama telah dikosongkan'));
+  $form_state['redirect'] = 'agama';
+}
+
+function _agama_set_to_default() {
+  $getvalues = _agama_default_value();
+  db_set_active(REFUMUM_DB_USE);
+  foreach ($getvalues as $key => $value) {
+    db_query("INSERT INTO {agama} (aid, agama) VALUES (%d, '%s')",
+      $key, $value
+    );
+  }
+  db_set_active('default');
+}

@@ -33,11 +33,6 @@ if (!defined('REFUMUM_DB_USE')) {
   define('REFUMUM_DB_USE', 'pegawai');
 }
 
-//function refumum_menu() {
-//  $items = array();
-//  return $items;
-//}
-
 function refumum_theme() {
   return array(
     'refumum_detail' => array(

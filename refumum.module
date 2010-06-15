@@ -30,7 +30,7 @@
 */
 
 if (!defined('REFUMUM_DB_USE')) {
-  define('REFUMUM_DB_USE', 'pegawai');
+  define('REFUMUM_DB_USE', 'default');
 }
 
 function refumum_theme() {
